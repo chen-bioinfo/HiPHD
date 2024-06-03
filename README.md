@@ -3,6 +3,7 @@
 
 ## 📘 Abstract
 &nbsp;&nbsp;&nbsp;&nbsp; Protein homology detection is crucial in various biological tasks, such as protein function annotation and structure prediction. Computational methods have been developed to improve protein homology detection. However, most existing methods are sequence-based and computationally costly due to their dependence on database searching and protein alignment. Proteins with remote homology usually share similar structures and less than 25\% sequence identity; the performance of entirely sequence-based methods is limited. 
+
 &nbsp;&nbsp;&nbsp;&nbsp; This study proposes an alignment-free method based on a sequence-structure hybrid model and a hierarchical multi-task classification framework to detect protein homology. The experimental results show that integrating sequence and structural information can improve protein homology detection, and the proposed method outperforms existing methods in terms of both efficiency and accuracy in SCOPe and CATH databases. It's anticipated the proposed method will become a valuable tool for protein homology detection and representation learning.
 
 
