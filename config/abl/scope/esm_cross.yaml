@@ -1,0 +1,83 @@
+output_dir: esm_ckpt/
+dataset:
+  class: ScopeHB
+  path: ~/Superfamily/GearNet/scop_data/Data/
+  multitask: True
+  transform:
+    class: ProteinView
+    view: residue
+
+task:
+  class: MultiTaskPrediction
+  num_mlp_layer: 3
+  mlp_batch_norm: True
+  mlp_dropout: 0.5
+  model:
+    class: FusionNetwork
+    fusion: cross
+    cross_dim: 512
+    sequence_model:
+      class: ESM
+      path: ~/Superfamily/GearNet/esm-model-weights/
+      model: ESM-2-650M
+    structure_model:
+      class: GearNetIEConv
+      input_dim: 21 # node feature
+      embedding_dim: 512
+      hidden_dims: [512, 512, 512, 512, 512, 512]
+      batch_norm: True
+      concat_hidden: True
+      short_cut: True
+      readout: 'sum'
+      num_relation: 8
+      edge_input_dim: 60  #edge feature 21+21+1+1+num_relation
+      num_angle_bin: 8
+      layer_norm: True
+      dropout: 0.2
+      use_ieconv: True
+
+  graph_construction_model:
+    class: GraphConstruction
+    edge_layers:
+      - class: BondEdge
+      - class: SequentialEdge
+        max_distance: 2
+      - class: SpatialEdge
+        radius: 10.0
+        min_distance: 5
+      - class: KNNEdge
+        k: 10
+        min_distance: 5
+    edge_feature: gearnet
+  criterion: ce
+  metric: ['acc']
+  num_class: [12, 1483, 2391]
+
+
+optimizer:
+  class: Adam
+  lr: 1.0e-4
+  weight_decay: 5e-4
+  # momentum: 0.98
+
+scheduler:
+  class: ReduceLROnPlateau
+  factor: 0.6
+  patience: 3
+
+verbose: 0
+engine:
+  # class: EngineWithAMP
+  gpus: {{ gpus }}
+  batch_size: 4
+  log_interval: 250
+
+# classifier: True
+
+checkpoint: {{ ckpt }}
+sequence_model_lr_ratio: 0.1
+metric: accuracy [super]
+
+train:
+  num_epoch: 100
+  save_step: 10

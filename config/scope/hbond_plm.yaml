@@ -1,0 +1,75 @@
+output_dir: log_ckpt/
+dataset:
+  class: ScopeHB
+  path: ~/Superfamily/GearNet/scop_data/Data/
+  multitask: False
+  transform:
+    class: ProteinView
+    view: residue
+
+task:
+  class: SuperfamilyPrediction
+  num_mlp_layer: 3
+  mlp_batch_norm: True
+  mlp_dropout: 0.5
+  model:
+    class: FusionNetwork
+    fusion: series
+    sequence_model:
+      class: ESM
+      path: ~/Superfamily/GearNet/esm-model-weights/
+      model: ESM-2-650M
+    structure_model:
+      class: GearNetIEConv
+      input_dim: 1280 # node feature
+      embedding_dim: 512
+      hidden_dims: [512, 512, 512, 512, 512, 512]
+      batch_norm: True
+      concat_hidden: True
+      short_cut: True
+      readout: 'sum'
+      num_relation: 8
+      edge_input_dim: 60 #edge feature 21+21+1+1+num_relation
+      num_angle_bin: 8
+      layer_norm: True
+      dropout: 0.2
+      use_ieconv: True
+
+  graph_construction_model:
+    class: GraphConstruction
+    edge_layers:
+      - class: BondEdge
+      - class: SpatialEdge
+        radius: 10.0
+        min_distance: 0
+    edge_feature: gearnet
+  criterion: ce
+  metric: ['acc']
+  num_class: 2391
+
+
+optimizer:
+  class: SGD
+  lr: 1.0e-4
+  weight_decay: 5.0e-4
+  momentum: 0.98
+
+scheduler:
+  class: ReduceLROnPlateau
+  factor: 0.6
+  patience: 5
+
+verbose: 0
+engine:
+  gpus: {{ gpus }}
+  batch_size: 4
+  log_interval: 250
+
+
+checkpoint: {{ ckpt }}
+sequence_model_lr_ratio: 0.1
+metric: accuracy [super]
+
+train:
+  num_epoch: 100
+  save_step: 10
