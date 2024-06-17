@@ -2,7 +2,7 @@ import os
 os.environ['CUDA_VISIBLE_DEVICES'] ='1'
 from torchdrug import core
 import numpy as np
-from gearnet import dataset, model,SCOPe,tasks
+from hiphd import dataset, model,SCOPe,tasks
 
 import logging
 logging.disable()

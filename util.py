@@ -16,7 +16,7 @@ from torchdrug import core, utils, datasets, tasks, models
 
 from torchdrug.utils import comm
 from torchdrug.core import Engine
-from gearnet.engine import EngineWithAMP
+from hiphd.engine import EngineWithAMP
 logger = logging.getLogger(__file__)
 
 def get_root_logger(file=True):

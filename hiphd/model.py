@@ -11,7 +11,7 @@ from torchdrug import core, layers
 from torchdrug.core import Registry as R
 from torchdrug.layers import functional
 
-from gearnet import layer
+from hiphd import layer
 
 
 @R.register("models.GearNetIEConv")

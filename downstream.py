@@ -16,7 +16,7 @@ from torchdrug.utils import comm
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import util
-from gearnet import dataset, model,tasks, engine
+from hiphd import dataset, model,tasks, engine
 
 
 def train_and_validate(cfg, solver, scheduler):
