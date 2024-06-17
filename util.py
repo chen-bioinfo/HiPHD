@@ -16,7 +16,6 @@ from torchdrug import core, utils, datasets, tasks, models
 
 from torchdrug.utils import comm
 from torchdrug.core import Engine
-from hiphd.engine import EngineWithAMP
 logger = logging.getLogger(__file__)
 
 def get_root_logger(file=True):
@@ -118,7 +117,6 @@ def build_downstream_solver(cfg, dataset):
         cfg.engine.scheduler = scheduler
 
     solver = Engine(task, train_set, valid_set,test_set, optimizer, **cfg.engine)
-    # solver = EngineWithAMP(task, train_set, valid_set,test_set, optimizer, **cfg.engine)
 
     if "lr_ratio" in cfg:
         cfg.optimizer.params = [

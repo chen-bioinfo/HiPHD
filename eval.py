@@ -2,7 +2,7 @@ import os
 os.environ['CUDA_VISIBLE_DEVICES'] ='1'
 from torchdrug import core
 import numpy as np
-from hiphd import dataset, model,SCOPe,tasks
+from hiphd.dataset import Scope, ScopeHB, CATH
 
 import logging
 logging.disable()
@@ -16,6 +16,7 @@ from torchdrug import data, utils, transforms
 from torchdrug.core import Registry as R
 from torch.utils import data as torch_data
 
+# Assign the path of dataset and model weights
 base_path = os.path.dirname(__file__)
 MODEL_FILE = os.path.join(base_path,'log_ckpt/SuperfamilyPrediction/SCOPe/GearNetIEConv/2023-10-24-17-57-17/model_epoch_100.pth')
 SCOPE_FILE = os.path.join(base_path, 'DataTest')
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     task.load_state_dict(state["model"], strict=False)
     task = task.to('cuda')
 
-    origin_data = SCOPe.SCOPe(SCOPE_FILE, transform = transforms.ProteinView('residue'))
+    origin_data = Scope(SCOPE_FILE, transform = transforms.ProteinView('residue'))
     test = origin_data.split()[2]
     valid = origin_data.split()[1]
     train = origin_data.split()[0]

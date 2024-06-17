@@ -16,23 +16,16 @@ from torchdrug.utils import comm
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 import util
-from hiphd import dataset, model,tasks, engine
+from hiphd import dataset
 
 
 def train_and_validate(cfg, solver, scheduler):
     if cfg.train.num_epoch == 0:
         return
 
-    # step = math.ceil(cfg.train.num_epoch / 50)
-    # step = 1 #  FOR TEST ONLY
     step = cfg.train.save_step
     best_result = float("-inf")
     best_epoch = -1
-
-    # 冻结参数
-    # for n, p in solver.model.named_parameters():
-    #     if 'mlp' not in n:
-    #         p.requires_grad = False
 
     for i in range(0, cfg.train.num_epoch, step):
         kwargs = cfg.train.copy()
@@ -42,7 +35,6 @@ def train_and_validate(cfg, solver, scheduler):
         solver.train(**kwargs)
         solver.save("model_epoch_%d.pth" % solver.epoch)
         metric = solver.evaluate("valid")
-        # solver.evaluate("valid")
 
         result = metric[cfg.metric]
         if result > best_result:
@@ -60,7 +52,6 @@ def test(cfg, solver):
 
 
 if __name__ == "__main__":
-    # print(torch.cuda.is_available())
     args, vars = util.parse_args()
     cfg = util.load_config(args.config, context=vars)
     cfg_path = os.path.abspath(args.config)
