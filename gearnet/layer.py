@@ -7,41 +7,6 @@ from torchdrug.layers import functional
 from torchdrug.core import Registry as R
 
 from torchdrug import layers
-# @R.register("layers.geometry.HBondEdge")
-# class HBondEdge(nn.Module, core.Configurable):
-#     def __init__(self, radius=2, only_backbone=False):
-#         super(HBondEdge, self).__init__()
-#         self.radius = radius
-#         self.only_backbone = only_backbone
-#     def forward(self, graph):
-#         num_relation = graph.num_relation
-#         # edge_list = torch.as_tensor([[0,0,0]], device=graph.device)
-#         edge_list = graph.edge_list
-#         return edge_list, num_relation
-    # def forward(self, graph):
-    #     edge_list = []
-    #     i = self.radius
-    #     hbond_list = graph.edge_list
-    #     for hbond in hbond_list:
-    #         node_in = torch.arange(hbond[0] - i, hbond[0] + i + 1).flatten().to(device=graph.device)
-    #         node_out = torch.arange(hbond[1] - i, hbond[1] + i + 1).flatten().to(device=graph.device)
-
-    #         idx_min = torch.as_tensor(0).to(device=graph.device)
-    #         idx_max = torch.as_tensor(graph.num_node - 1)
-    #         node_in = node_in[node_in > idx_min]
-    #         node_in = node_in[node_in < idx_max]
-    #         node_out = node_out[node_out > idx_min]
-    #         node_out = node_out[node_out < idx_max]
-
-    #         node_in, node_out = torch.meshgrid(node_in, node_out)
-    #         node_in = node_in.flatten()
-    #         node_out = node_out.flatten()
-    #         relation = torch.zeros(len(node_in), dtype=torch.long, device=graph.device) 
-    #         edges = torch.stack([node_in, node_out, relation], dim=-1)
-    #         edge_list.append(edges)
-    #     edge_list = torch.cat(edge_list)
-    #     return edge_list, 1
-
 
 class IEConvLayer(nn.Module):
     eps = 1e-6

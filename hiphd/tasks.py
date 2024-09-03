@@ -35,6 +35,30 @@ class HierarchyTaskPrediction(tasks.Task, core.Configurable):
         self.num_prefix_layer = num_prefix_layer
         self.prefix_dropout = prefix_dropout
 
+        self.register_buffer("mean", torch.as_tensor(num_class, dtype=torch.float))
+        self.register_buffer("std", torch.as_tensor(num_class, dtype=torch.float))
+        self.register_buffer("weight", torch.as_tensor(num_class, dtype=torch.float))
+        self.mlp = nn.ModuleList([])
+        self.hierachy_hidden = nn.ModuleList([])
+        self.output_mlp = nn.ModuleList([])
+        for i,n in enumerate(num_class):
+            if i == 0:
+                current_dim = self.model.output_dim
+            else:
+                current_dim = self.model.output_dim + self.prefix_dim
+
+            self.mlp.append(
+                layers.MLP(current_dim, [current_dim]*(self.num_mlp_layer - 1), batch_norm=self.mlp_batch_norm, dropout=self.mlp_dropout)
+            )
+            if i != 0:
+                self.hierachy_hidden.append(
+                    layers.MLP(num_class[i-1], [self.prefix_dim]*self.num_prefix_layer, batch_norm=self.mlp_batch_norm, dropout=self.prefix_dropout)
+                )
+            self.output_mlp.append(
+                layers.MLP(current_dim, [n])
+            )
+
+
     def preprocess(self, train_set, valid_set, test_set):
         values = defaultdict(list)
         for sample in train_set:
@@ -69,26 +93,34 @@ class HierarchyTaskPrediction(tasks.Task, core.Configurable):
         self.num_class = self.num_class or num_class
         self.weight = torch.as_tensor(weight, dtype=torch.float)
 
+        # hidden_dims = [self.model.output_dim] * (self.num_mlp_layer - 1)
+        # self.mlp = layers.MLP(self.model.output_dim, hidden_dims,
+        #                     batch_norm = self.mlp_batch_norm, dropout = self.mlp_dropout)
+        # self.mlp_class = layers.MLP(self.model.output_dim, [num_class[0]])
+        # self.mlp_fold = layers.MLP(self.model.output_dim, [num_class[1]])
+        # self.mlp_super = layers.MLP(self.model.output_dim, [num_class[2]])
+        # self.output_mlp =nn.ModuleList( [
+        #     layers.MLP(self.model.output_dim, [n])  for n in num_class
+        # ])
+        # self.mlp = nn.ModuleList([])
+        # self.hierachy_hidden = nn.ModuleList([])
+        # self.output_mlp = nn.ModuleList([])
+        # for i,n in enumerate(num_class):
+        #     if i == 0:
+        #         current_dim = self.model.output_dim
+        #     else:
+        #         current_dim = self.model.output_dim + self.prefix_dim
 
-        self.mlp = nn.ModuleList([])
-        self.hierachy_hidden = nn.ModuleList([])
-        self.output_mlp = nn.ModuleList([])
-        for i,n in enumerate(num_class):
-            if i == 0:
-                current_dim = self.model.output_dim
-            else:
-                current_dim = self.model.output_dim + self.prefix_dim
-
-            self.mlp.append(
-                layers.MLP(current_dim, [current_dim]*(self.num_mlp_layer - 1), batch_norm=self.mlp_batch_norm, dropout=self.mlp_dropout)
-            )
-            if i != 0:
-                self.hierachy_hidden.append(
-                    layers.MLP(num_class[i-1], [self.prefix_dim]*self.num_prefix_layer, batch_norm=self.mlp_batch_norm, dropout=self.prefix_dropout)
-                )
-            self.output_mlp.append(
-                layers.MLP(current_dim, [n])
-            )
+        #     self.mlp.append(
+        #         layers.MLP(current_dim, [current_dim]*(self.num_mlp_layer - 1), batch_norm=self.mlp_batch_norm, dropout=self.mlp_dropout)
+        #     )
+        #     if i != 0:
+        #         self.hierachy_hidden.append(
+        #             layers.MLP(num_class[i-1], [self.prefix_dim]*self.num_prefix_layer, batch_norm=self.mlp_batch_norm, dropout=self.prefix_dropout)
+        #         )
+        #     self.output_mlp.append(
+        #         layers.MLP(current_dim, [n])
+        #     )
     @torch.autocast(device_type="cuda")
     def forward(self, batch):
         """"""
@@ -114,6 +146,7 @@ class HierarchyTaskPrediction(tasks.Task, core.Configurable):
                 for t, l in zip(self.task, loss):
                     metric["%s [%s]" % (name, t)] = l
             
+            # loss = (loss * self.weight).sum() / self.weight.sum()
             metric[name] = loss
             all_loss += loss * weight
 
@@ -131,6 +164,7 @@ class HierarchyTaskPrediction(tasks.Task, core.Configurable):
             else:
                 prefix = self.hierachy_hidden[i-1](pred_output)
                 current_input = torch.concat([prefix, output["graph_feature"]], dim = 1)
+            # current_input = torch.concat([prefix, output["graph_feature"]], dim = 1)
             hidden = mlp(current_input)
             pred_output = self.output_mlp[i](hidden)
             pred.append(pred_output)
@@ -164,7 +198,6 @@ class HierarchyTaskPrediction(tasks.Task, core.Configurable):
                 metric["%s [%s]" % (name, t)] = s
 
         return metric
-
 
 @R.register("tasks.MultiTaskPrediction")
 class MultiTaskPrediction(tasks.Task, core.Configurable):

@@ -6,7 +6,7 @@
 
 
 &nbsp;&nbsp;&nbsp;&nbsp; This study introduces HiPHD, a hierarchical classification framework for protein remote homology detection. HiPHD fuses protein sequential information embedded by protein language models and structural information encoded by graph neural networks, effectively combining spatial and chemical features.
-Experimental results demonstrate that HiPHD outperforms existing methods in terms of accuracy at all hierarchical levels in both SCOPe and CATH databases. It's anticipated HiPHD will become a valuable tool for protein homology detection and representation learning.\\
+Experimental results demonstrate that HiPHD outperforms existing methods in terms of accuracy at all hierarchical levels in both SCOPe and CATH databases. It's anticipated HiPHD will become a valuable tool for protein homology detection and representation learning.
 
 
 
@@ -25,14 +25,39 @@ Install required package
 ```
 conda install --file requirements.txt
 ```
+
+The pretrained models are [here](https://zenodo.org/records/11894644), please download models and attached contig files into the `model/` directory.
+
+The data used for traning can be downloaded [here]().
 ## 🚀 Train
 ```
 python downstream.py -c config/scope/hbond_plm.yaml --gpus [0,1]
 ```
 ## 🧐 Prediction
+
+### Usage
 ```
-python eval.py
+# If use GPU 0 and adopt ESM features
+python eval.py [-f PATH_TO_THE_PDB_FILE] [-s scope or cath] [-g 0] [-e]
+
+# If use CPU and not adopt ESM features
+python eval.py [-f PATH_TO_THE_PDB_FILE] [-s scope or cath]
 ```
+
+### Options
+```
+  -f FILE, --file FILE  One single pdb file
+  -e, --esm             Whether to enable protein language model
+  -s SYSTEM, --system SYSTEM
+                        Protein classification system, 'scope' or 'cath'. Default: scope
+  -g GPUS, --gpus GPUS  Whether to use gpu and specify the index of gpu. Set -1 to use CPU. Default: -1
+```
+
+### Example
+```
+python predict.py -f test_data/d1a1yi_.pdb
+```
+
 ## 💡 Acknowledgement
 This codebase is based on [TorchDrug](https://github.com/DeepGraphLearning/torchdrug) and [GearNet](https://github.com/DeepGraphLearning/GearNet). Thanks for their work!
  
