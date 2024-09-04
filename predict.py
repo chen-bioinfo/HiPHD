@@ -9,6 +9,7 @@ import json
 import argparse
 import numpy as np
 import torch
+import esm
 from torch.optim import lr_scheduler
 from torchdrug import core, models, tasks, datasets, utils, data, transforms
 from torchdrug.utils import comm

@@ -26,9 +26,9 @@ Install required package
 conda install --file requirements.txt
 ```
 
-The pretrained models are [here](https://zenodo.org/records/11894644), please download models and attached contig files into the `model/` directory.
+The pretrained models are [here](https://zenodo.org/records/11894644), please download models and attached contig `.yaml` files into the `model/` directory.
 
-The data used for traning can be downloaded [here]().
+The data used for training can be downloaded [here]().
 ## 🚀 Train
 ```
 python downstream.py -c config/scope/hbond_plm.yaml --gpus [0,1]
@@ -55,7 +55,7 @@ python eval.py [-f PATH_TO_THE_PDB_FILE] [-s scope or cath]
 
 ### Example
 ```
-python predict.py -f test_data/d1a1yi_.pdb
+python predict.py -f test_data/d1a1yi_.ent
 ```
 
 ## 💡 Acknowledgement

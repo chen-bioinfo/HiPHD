@@ -7,10 +7,10 @@ from torch.nn import functional as F
 
 from torch_scatter import scatter_add
 
-from torchdrug import core, layers
+from torchdrug import core, layers, data
 from torchdrug.core import Registry as R
 from torchdrug.layers import functional
-
+import esm
 from gearnet import layer
 
 
@@ -224,3 +224,88 @@ class FusionNetwork(nn.Module, core.Configurable):
             "node_feature": node_feature
         }
         
+@R.register("models.ModifiedESM")
+class ModifiedESM(nn.Module, core.Configurable):
+    output_dim = {
+        "ESM-2-650M": 1280
+    }
+    num_layer = {
+        "ESM-2-650M": 33
+    }
+    max_input_length = 1024 - 2
+
+    def __init__(self, model="ESM-2-650M", readout="mean"):
+        super(ModifiedESM, self).__init__()
+        _model, alphabet = self.load_weight()
+        self.alphabet = alphabet
+        mapping = self.construct_mapping(alphabet)
+        self.output_dim = self.output_dim[model]
+        self.model = _model
+        self.alphabet = alphabet
+        self.repr_layer = self.num_layer[model]
+        self.register_buffer("mapping", mapping)
+
+        if readout == "sum":
+            self.readout = layers.SumReadout("residue")
+        elif readout == "mean":
+            self.readout = layers.MeanReadout("residue")
+        else:
+            raise ValueError("Unknown readout `%s`" % readout)
+
+    def load_weight(self):
+        alphabet = esm.data.Alphabet.from_architecture("ESM-1b")
+        model = esm.model.esm2.ESM2(
+        num_layers=33,
+        embed_dim=1280,
+        attention_heads=20,
+        alphabet=alphabet,
+        token_dropout=True,
+        )
+        return model, alphabet
+
+    def construct_mapping(self, alphabet):
+        mapping = [-1] * max(len(data.Protein.id2residue_symbol), len(self.alphabet))
+        for i, token in data.Protein.id2residue_symbol.items():
+            mapping[i] = alphabet.get_idx(token)
+        mapping = torch.tensor(mapping)
+        return mapping
+
+    def forward(self, graph, input, all_loss=None, metric=None):
+        input = graph.residue_type
+        input = self.mapping[input]
+        input[input == -1] = graph.residue_type[input == -1]
+        size = graph.num_residues
+        if (size > self.max_input_length).any():
+            warnings.warn("ESM can only encode proteins within %d residues. Truncate the input to fit into ESM."
+                          % self.max_input_length)
+            starts = size.cumsum(0) - size
+            size = size.clamp(max=self.max_input_length)
+            ends = starts + size
+            mask = functional.multi_slice_mask(starts, ends, graph.num_residue)
+            input = input[mask]
+            graph = graph.subresidue(mask)
+        size_ext = size
+        if self.alphabet.prepend_bos:
+            bos = torch.ones(graph.batch_size, dtype=torch.long, device=self.device) * self.alphabet.cls_idx
+            input, size_ext = functional._extend(bos, torch.ones_like(size_ext), input, size_ext)
+        if self.alphabet.append_eos:
+            eos = torch.ones(graph.batch_size, dtype=torch.long, device=self.device) * self.alphabet.eos_idx
+            input, size_ext = functional._extend(input, size_ext, eos, torch.ones_like(size_ext))
+        input = functional.variadic_to_padded(input, size_ext, value=self.alphabet.padding_idx)[0]
+
+        output = self.model(input, repr_layers=[self.repr_layer])
+        residue_feature = output["representations"][self.repr_layer]
+
+        residue_feature = functional.padded_to_variadic(residue_feature, size_ext)
+        starts = size_ext.cumsum(0) - size_ext
+        if self.alphabet.prepend_bos:
+            starts = starts + 1
+        ends = starts + size
+        mask = functional.multi_slice_mask(starts, ends, len(residue_feature))
+        residue_feature = residue_feature[mask]
+        graph_feature = self.readout(graph, residue_feature)
+
+        return {
+            "graph_feature": graph_feature,
+            "residue_feature": residue_feature
+        }
